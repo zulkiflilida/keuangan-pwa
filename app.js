@@ -111,11 +111,16 @@ document.getElementById('formKas').addEventListener('submit', async (e) => {
             mimeType: mimeType
         };
 
+        // Ubah bagian fetch di dalam app.js menjadi seperti ini:
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
+            redirect: 'follow', // Wajib untuk mengikuti redirect 302 dari Google
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8", // Mencegah pemblokiran CORS Preflight
+            },
             body: JSON.stringify(payload)
         });
-        
+
         const result = await response.json();
         
         if (result.status === 201) {
