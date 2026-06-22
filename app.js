@@ -3,12 +3,10 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwztpzWA1Nz9rDUUT0hM
 
 const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 
-// Set default tanggal ke hari ini
-document.getElementById('inputTanggal').valueAsDate = new Date();
-
 // Helper Notifikasi
 function showAlert(message, isError = false) {
     const box = document.getElementById('alertBox');
+    if (!box) return; // Safety check
     box.className = `p-4 rounded-lg text-sm font-bold text-white shadow-lg mb-4 block ${isError ? 'bg-red-500' : 'bg-emerald-500'}`;
     box.innerText = message;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -21,7 +19,6 @@ function getBase64(file) {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => {
-            // Membuang meta header (data:image/jpeg;base64,) agar server menerima raw string
             let encoded = reader.result.toString().replace(/^data:(.*,)?/, '');
             resolve(encoded);
         };
@@ -29,7 +26,7 @@ function getBase64(file) {
     });
 }
 
-// Mengambil dan me-render Dashboard
+// Fungsi Load Data
 async function loadData() {
     try {
         const res = await fetch(SCRIPT_URL);
@@ -42,8 +39,9 @@ async function loadData() {
             document.getElementById('txtKeluar').innerText = formatRp(d.keluar);
             
             const tbody = document.getElementById('tabelRiwayat');
-            tbody.innerHTML = '';
+            if(!tbody) return;
             
+            tbody.innerHTML = '';
             if(d.histori.length === 0) {
                 tbody.innerHTML = `<tr><td class="py-4 text-center text-gray-400">Belum ada transaksi</td></tr>`;
                 return;
@@ -76,69 +74,73 @@ async function loadData() {
     }
 }
 
-// Menangani Submit Form
-document.getElementById('formKas').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btnSubmit');
-    const fileInput = document.getElementById('inputFoto');
-    
-    btn.disabled = true;
-    btn.innerText = "Mengunggah Data...";
-    btn.classList.add('opacity-70');
+// PEMBUNGKUS UTAMA: Menunggu HTML benar-benar siap
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Set default tanggal
+    const tglInput = document.getElementById('inputTanggal');
+    if (tglInput) tglInput.valueAsDate = new Date();
 
-    try {
-        let base64String = null;
-        let mimeType = null;
+    // 2. Load data awal
+    loadData();
 
-        // Proses gambar jika ada
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            // Validasi ukuran file (Max 2MB untuk menjaga limit Apps Script)
-            if(file.size > 2 * 1024 * 1024) throw new Error("Ukuran foto maksimal 2MB");
+    // 3. Event Listener Form
+    const formKas = document.getElementById('formKas');
+    if (formKas) {
+        formKas.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            const fileInput = document.getElementById('inputFoto');
             
-            mimeType = file.type;
-            base64String = await getBase64(file);
-        }
+            btn.disabled = true;
+            btn.innerText = "Mengunggah Data...";
+            btn.classList.add('opacity-70');
 
-        const payload = {
-            tanggal: document.getElementById('inputTanggal').value,
-            tipe: document.getElementById('inputTipe').value,
-            nominal: document.getElementById('inputNominal').value,
-            kategori: document.getElementById('inputKategori').value,
-            metodeBayar: document.getElementById('inputMetode').value,
-            catatan: document.getElementById('inputCatatan').value,
-            fotoBase64: base64String,
-            mimeType: mimeType
-        };
+            try {
+                let base64String = null;
+                let mimeType = null;
 
-        // Ubah bagian fetch di dalam app.js menjadi seperti ini:
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            redirect: 'follow', // Wajib untuk mengikuti redirect 302 dari Google
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8", // Mencegah pemblokiran CORS Preflight
-            },
-            body: JSON.stringify(payload)
+                if (fileInput && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    if(file.size > 2 * 1024 * 1024) throw new Error("Ukuran foto maksimal 2MB");
+                    mimeType = file.type;
+                    base64String = await getBase64(file);
+                }
+
+                const payload = {
+                    tanggal: document.getElementById('inputTanggal').value,
+                    tipe: document.getElementById('inputTipe').value,
+                    nominal: document.getElementById('inputNominal').value,
+                    kategori: document.getElementById('inputKategori').value,
+                    metodeBayar: document.getElementById('inputMetode').value,
+                    catatan: document.getElementById('inputCatatan').value,
+                    fotoBase64: base64String,
+                    mimeType: mimeType
+                };
+
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 201) {
+                    showAlert("Berhasil mencatat transaksi kas!");
+                    formKas.reset();
+                    if (tglInput) tglInput.valueAsDate = new Date();
+                    loadData();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                showAlert(error.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Simpan Transaksi";
+                btn.classList.remove('opacity-70');
+            }
         });
-
-        const result = await response.json();
-        
-        if (result.status === 201) {
-            showAlert("Berhasil mencatat transaksi kas!");
-            document.getElementById('formKas').reset();
-            document.getElementById('inputTanggal').valueAsDate = new Date(); // Reset tanggal ke hari ini
-            loadData(); // Refresh data saldo & tabel
-        } else {
-            throw new Error(result.message);
-        }
-    } catch (error) {
-        showAlert(error.message, true);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Simpan Transaksi";
-        btn.classList.remove('opacity-70');
     }
 });
-
-// Load awal
-window.addEventListener('DOMContentLoaded', loadData);
