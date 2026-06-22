@@ -10,11 +10,11 @@
 <body class="bg-gray-50 text-gray-800 pb-20">
     <header class="bg-emerald-600 text-white p-4 shadow-md sticky top-0 z-50">
         <h1 class="text-xl font-bold text-center mb-3">Sistem ERP UMKM</h1>
-        <div class="flex overflow-x-auto text-sm font-bold bg-white rounded-lg shadow-sm">
+        <div class="flex overflow-x-auto text-sm font-bold bg-white rounded-lg shadow-sm scrollbar-hide">
             <button id="btn-tab-kas" onclick="switchTab('tab-kas')" class="tab-btn flex-1 py-2 px-3 border-b-2 text-emerald-600 border-emerald-600 whitespace-nowrap">Kas</button>
-            <button id="btn-tab-utang" onclick="switchTab('tab-utang')" class="tab-btn flex-1 py-2 px-3 border-b-2 text-gray-500 border-transparent hover:text-emerald-500 whitespace-nowrap">Utang</button>
+            <button id="btn-tab-hpp" onclick="switchTab('tab-hpp')" class="tab-btn flex-1 py-2 px-3 border-b-2 text-gray-500 border-transparent hover:text-emerald-500 whitespace-nowrap">Hitung HPP</button>
             <button id="btn-tab-inv" onclick="switchTab('tab-inv')" class="tab-btn flex-1 py-2 px-3 border-b-2 text-gray-500 border-transparent hover:text-emerald-500 whitespace-nowrap">Barang</button>
-            <button id="btn-tab-kontak" onclick="switchTab('tab-kontak')" class="tab-btn flex-1 py-2 px-3 border-b-2 text-gray-500 border-transparent hover:text-emerald-500 whitespace-nowrap">Kontak</button>
+            <button id="btn-tab-utang" onclick="switchTab('tab-utang')" class="tab-btn flex-1 py-2 px-3 border-b-2 text-gray-500 border-transparent hover:text-emerald-500 whitespace-nowrap">Utang</button>
             <button id="btn-tab-laporan" onclick="switchTab('tab-laporan')" class="tab-btn flex-1 py-2 px-3 border-b-2 text-gray-500 border-transparent hover:text-emerald-500 whitespace-nowrap">Laporan</button>
         </div>
     </header>
@@ -41,7 +41,11 @@
                     </div>
                     <div><label class="block text-xs font-bold text-gray-700 mb-1">Nominal (Rp)</label><input type="number" id="inputNominal" class="w-full p-3 border border-emerald-300 rounded-lg text-lg font-bold bg-emerald-50 focus:ring-2 focus:ring-emerald-500" placeholder="0" required min="1"></div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label class="block text-xs font-bold text-gray-700 mb-1">Kategori</label><input type="text" id="inputKategori" class="w-full p-2 border rounded-lg bg-gray-50 text-sm" placeholder="Contoh: Penjualan..." required></div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Kategori / Nama</label>
+                            <input type="text" id="inputKategori" list="listKategori" class="w-full p-2 border rounded-lg bg-gray-50 text-sm" placeholder="Ketik atau pilih..." required>
+                            <datalist id="listKategori"></datalist>
+                        </div>
                         <div><label class="block text-xs font-bold text-gray-700 mb-1">Jumlah (Pcs)</label><input type="number" id="inputPcs" class="w-full p-2 border rounded-lg bg-gray-50 text-sm" placeholder="0" min="0"></div>
                         <div><label class="block text-xs font-bold text-gray-700 mb-1">Metode Bayar</label><select id="inputMetode" class="w-full p-2 border rounded-lg bg-gray-50 text-sm"><option value="Tunai">Tunai / Cash</option><option value="Transfer Bank">Transfer Bank</option><option value="e-Wallet">e-Wallet (OVO, Gopay)</option></select></div>
                     </div>
@@ -54,6 +58,80 @@
             <section class="bg-white p-5 rounded-xl shadow-md">
                 <h3 class="font-bold text-lg mb-4 border-b pb-2">10 Transaksi Terakhir</h3>
                 <div class="overflow-x-auto"><table class="w-full text-left text-sm whitespace-nowrap"><tbody id="tabelRiwayat"></tbody></table></div>
+            </section>
+        </div>
+
+        <div id="tab-hpp" class="tab-content hidden space-y-6">
+            <section class="bg-white p-5 rounded-xl shadow-md">
+                <h3 class="font-bold text-lg mb-4 border-b pb-2">Kalkulator Modal / HPP</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">Nama Produk yang Mau Dibuat</label>
+                        <input type="text" id="hppNamaProduk" class="w-full p-2 border border-gray-300 rounded text-sm" placeholder="Contoh: Keripik Pisang Keju 100gr">
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 class="text-xs font-bold mb-2 text-gray-600 uppercase">Tambah Komponen (Bahan / Alat)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                            <div class="md:col-span-2"><input type="text" id="hppKomponen" class="w-full p-2 border rounded text-sm" placeholder="Nama Bahan (ex: Minyak Goreng)"></div>
+                            <div><input type="number" id="hppHarga" class="w-full p-2 border rounded text-sm" placeholder="Total Biaya (Rp)"></div>
+                            <div><button type="button" onclick="addHppItem()" class="w-full bg-emerald-500 text-white p-2 rounded text-sm font-bold">+ Tambah</button></div>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-left text-sm mt-4">
+                        <thead><tr class="border-b text-xs text-gray-500"><th class="pb-2">Daftar Komponen</th><th class="pb-2 text-right">Biaya (Rp)</th><th class="pb-2 text-center">Aksi</th></tr></thead>
+                        <tbody id="hppTableBody"></tbody>
+                    </table>
+
+                    <div class="grid grid-cols-2 gap-4 border-t pt-4">
+                        <div>
+                            <label class="block text-xs font-bold mb-1 text-gray-500">Total Semua Modal (Rp)</label>
+                            <input type="text" id="hppTotalModal" class="w-full p-2 border rounded text-lg font-bold bg-gray-200 text-gray-600" readonly value="0">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold mb-1 text-blue-600">Target Jadi Berapa Pcs?</label>
+                            <input type="number" id="hppTargetPcs" class="w-full p-2 border border-blue-300 focus:ring focus:ring-blue-200 rounded text-lg font-bold bg-white" value="1" min="1" oninput="calculateFinalHpp()">
+                        </div>
+                    </div>
+                    
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-center mt-2">
+                        <p class="text-xs font-bold text-emerald-600 uppercase mb-1">Modal Satuan (HPP per Pcs)</p>
+                        <h2 id="hppPerPcs" class="text-3xl font-black text-emerald-700">Rp 0</h2>
+                    </div>
+                    
+                    <button type="button" id="btnSimpanHPP" class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold shadow-md hover:bg-indigo-700">Simpan & Masukkan ke Inventaris</button>
+                </div>
+            </section>
+
+            <section class="bg-white p-5 rounded-xl shadow-md overflow-x-auto">
+                <h3 class="font-bold text-lg mb-4 border-b pb-2">Riwayat Kalkulasi</h3>
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead><tr class="text-xs text-gray-400 border-b"><th class="pb-2">Produk</th><th class="pb-2 text-center">Hasil</th><th class="pb-2 text-right">Total Modal</th><th class="pb-2 text-right">HPP/Pcs</th></tr></thead>
+                    <tbody id="tabelRiwayatHPP" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </section>
+        </div>
+
+        <div id="tab-inv" class="tab-content hidden space-y-6">
+            <section class="bg-white p-5 rounded-xl shadow-md">
+                <h3 class="font-bold text-lg mb-4 border-b pb-2">Tambah Data Barang</h3>
+                <form id="formInv" class="space-y-4">
+                    <div><label class="block text-xs font-bold mb-1">Nama Barang</label><input type="text" id="inputINama" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="block text-xs font-bold mb-1 text-emerald-600">Modal / HPP</label><input type="number" id="inputIHPP" class="w-full p-2 border border-emerald-300 rounded bg-emerald-50 text-sm" required></div>
+                        <div><label class="block text-xs font-bold mb-1">Harga Jual</label><input type="number" id="inputIJual" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
+                        <div><label class="block text-xs font-bold mb-1">Stok Awal</label><input type="number" id="inputIStok" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
+                    </div>
+                    <button type="submit" id="btnSubmitInv" class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Simpan ke Inventaris</button>
+                </form>
+            </section>
+            <section class="bg-white p-5 rounded-xl shadow-md overflow-x-auto">
+                <h3 class="font-bold text-lg mb-4 border-b pb-2">Daftar Barang</h3>
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead><tr class="text-xs text-gray-400 border-b"><th class="pb-2">Barang</th><th class="pb-2 text-center">Stok</th><th class="pb-2 text-right">Harga Jual</th></tr></thead>
+                    <tbody id="tabelInv" class="divide-y divide-gray-100"></tbody>
+                </table>
             </section>
         </div>
 
@@ -79,59 +157,34 @@
             </section>
         </div>
 
-        <div id="tab-inv" class="tab-content hidden space-y-6">
-            <section class="bg-white p-5 rounded-xl shadow-md">
-                <h3 class="font-bold text-lg mb-4 border-b pb-2">Tambah Data Barang</h3>
-                <form id="formInv" class="space-y-4">
-                    <div><label class="block text-xs font-bold mb-1">Nama Barang</label><input type="text" id="inputINama" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><label class="block text-xs font-bold mb-1">Modal / HPP</label><input type="number" id="inputIHPP" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
-                        <div><label class="block text-xs font-bold mb-1">Harga Jual</label><input type="number" id="inputIJual" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
-                        <div><label class="block text-xs font-bold mb-1">Stok Awal</label><input type="number" id="inputIStok" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
-                    </div>
-                    <button type="submit" id="btnSubmitInv" class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Simpan Barang</button>
-                </form>
-            </section>
-            <section class="bg-white p-5 rounded-xl shadow-md overflow-x-auto">
-                <h3 class="font-bold text-lg mb-4 border-b pb-2">Daftar Barang</h3>
-                <table class="w-full text-left text-sm whitespace-nowrap">
-                    <thead><tr class="text-xs text-gray-400 border-b"><th class="pb-2">Barang</th><th class="pb-2 text-center">Stok</th><th class="pb-2 text-right">Harga Jual</th></tr></thead>
-                    <tbody id="tabelInv" class="divide-y divide-gray-100"></tbody>
-                </table>
-            </section>
-        </div>
+        <div id="tab-laporan" class="tab-content hidden space-y-6">
+            <div class="space-y-4">
+                <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
+                    <p class="text-xs text-blue-500 font-bold uppercase mb-1">Total Piutang (Orang Ngutang)</p>
+                    <h2 id="lapPiutang" class="text-2xl font-black text-blue-600">Rp 0</h2>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-red-500">
+                    <p class="text-xs text-red-500 font-bold uppercase mb-1">Total Hutang (Kewajiban)</p>
+                    <h2 id="lapHutang" class="text-2xl font-black text-red-600">Rp 0</h2>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-indigo-500">
+                    <p class="text-xs text-indigo-500 font-bold uppercase mb-1">Total Nilai Aset Barang (HPP x Stok)</p>
+                    <h2 id="lapAset" class="text-2xl font-black text-indigo-600">Rp 0</h2>
+                </div>
+            </div>
 
-        <div id="tab-kontak" class="tab-content hidden space-y-6">
-            <section class="bg-white p-5 rounded-xl shadow-md">
-                <h3 class="font-bold text-lg mb-4 border-b pb-2">Tambah Kontak</h3>
-                <form id="formKontak" class="space-y-4">
-                    <div><label class="block text-xs font-bold mb-1">Nama</label><input type="text" id="inputKNama" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
+            <section class="bg-white p-5 rounded-xl shadow-md mt-6">
+                <h3 class="font-bold text-lg mb-4 border-b pb-2">Manajemen Kontak</h3>
+                <form id="formKontak" class="space-y-4 mb-6">
+                    <div><label class="block text-xs font-bold mb-1">Nama Kontak</label><input type="text" id="inputKNama" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
                     <div class="grid grid-cols-2 gap-4">
                         <div><label class="block text-xs font-bold mb-1">No. WA</label><input type="text" id="inputKWA" class="w-full p-2 border rounded bg-gray-50 text-sm" required></div>
                         <div><label class="block text-xs font-bold mb-1">Tipe</label><select id="inputKTipe" class="w-full p-2 border rounded bg-gray-50 text-sm"><option value="Pelanggan">Pelanggan</option><option value="Supplier">Supplier</option><option value="Karyawan">Karyawan</option></select></div>
                     </div>
-                    <button type="submit" id="btnSubmitKontak" class="w-full bg-orange-600 text-white p-3 rounded-xl font-bold">Simpan Kontak</button>
+                    <button type="submit" id="btnSubmitKontak" class="w-full bg-orange-600 text-white p-2 rounded font-bold text-sm">Simpan Kontak</button>
                 </form>
-            </section>
-            <section class="bg-white p-5 rounded-xl shadow-md">
-                <h3 class="font-bold text-lg mb-4 border-b pb-2">Daftar Kontak</h3>
                 <table class="w-full text-left text-sm"><tbody id="tabelKontak" class="divide-y divide-gray-100"></tbody></table>
             </section>
-        </div>
-
-        <div id="tab-laporan" class="tab-content hidden space-y-4">
-            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
-                <p class="text-xs text-blue-500 font-bold uppercase mb-1">Total Piutang (Orang Ngutang)</p>
-                <h2 id="lapPiutang" class="text-2xl font-black text-blue-600">Rp 0</h2>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-red-500">
-                <p class="text-xs text-red-500 font-bold uppercase mb-1">Total Hutang (Kewajiban)</p>
-                <h2 id="lapHutang" class="text-2xl font-black text-red-600">Rp 0</h2>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-indigo-500">
-                <p class="text-xs text-indigo-500 font-bold uppercase mb-1">Total Nilai Aset Barang (HPP x Stok)</p>
-                <h2 id="lapAset" class="text-2xl font-black text-indigo-600">Rp 0</h2>
-            </div>
         </div>
     </main>
     <script src="app.js"></script>
